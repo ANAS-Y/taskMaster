@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskMaster - Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="navbar">
+    <!-- Navbar here -->
+        <div class="logo">TaskMaster</div>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="login.html">Login</a></li>
+          <li><a href="register.html">Register</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+        </ul>
+  </div>
+  <div class="container">
+    <h1>Task Dashboard</h1>
+    <p>Manage your tasks here. Use the form below to add tasks.</p>
+    <form id="task-form">
+      <input type="text" id="title" placeholder="Task Title" required><br>
+      <textarea id="description" placeholder="Task Description"></textarea><br>
+      <select id="priority">
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+      </select><br>
+      <input type="date" id="deadline"><br>
+      <button type="submit">Add Task</button>
+    </form>
+    
+  </div>
+  <div id="tasks-container">
+    <h1>My Tasks</h1>
+    <ul id="task-list"></ul>
+  </div>
+  
+    <!-- Footer here -->
+    <footer>
+        <p>&copy; 2024 3MTT@New Sky Software Development Team A. All Rights Reserved.</p>
+      </footer>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+   $(document).ready(function () {
+    // Fetch tasks
+    function fetchTasks() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You are not logged in!');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      $.ajax({
+        url: 'http://localhost:5000/api/task/list',
+        method: 'GET',
+        headers: {
+          Authorization: token,
+        },
+        success: function (tasks) {
+          const taskList = $('#task-list');
+          taskList.empty();
+          tasks.forEach((task) => {
+            taskList.append(`
+              <li>
+                <h3>${task.title}</h3>
+                <p>${task.description}</p>
+                <p><strong>Priority:</strong> ${task.priority}</p>
+                <p><strong>Deadline:</strong> ${new Date(task.deadline).toLocaleDateString()}</p>
+                <button class="delete-task" data-id="${task._id}">Delete</button>
+              </li>
+            `);
+          });
+        },
+        error: function () {
+          alert('Failed to fetch tasks.');
+        },
+      });
+    }
+
+    // Fetch tasks on page load
+    fetchTasks();
+
+    // Delete Task
+    $(document).on('click', '.delete-task', function () {
+      const taskId = $(this).data('id');
+      const token = localStorage.getItem('token');
+
+      $.ajax({
+        url: `http://localhost:5000/api/tasks/${taskId}`,
+        method: 'DELETE',
+        headers: {
+          Authorization: token,
+        },
+        success: function () {
+          alert('Task deleted successfully!');
+          fetchTasks();
+        },
+        error: function () {
+          alert('Failed to delete task.');
+        },
+      });
+    });
+  });
+
+  
+  $(document).ready(function () {
+    $('#task-form').on('submit', function (e) {
+      e.preventDefault();
+
+      const token = localStorage.getItem('token');
+      const title = $('#title').val();
+      const description = $('#description').val();
+      const priority = $('#priority').val();
+      const deadline = $('#deadline').val();
+
+      $.ajax({
+        url: 'http://localhost:5000/api/task/add',
+        method: 'POST',
+       headers: {
+          Authorization: token,
+        },
+        contentType: 'application/json',
+        data: JSON.stringify({ title, description, priority, deadline }),
+        success: function () {
+          alert('Task added successfully!');
+         //$('#task-form')[0].reset(); // Reset form
+        //fetchTasks(); // Refresh task list
+        },
+        error: function (xhr) {
+          const errorMessage = xhr.responseJSON?.message || 'Failed to add task.';
+          alert(errorMessage);
+        },
+      });
+    });
+  });
+
+</script>
+</body>
+</html>
